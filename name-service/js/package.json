@@ -1,6 +1,6 @@
 {
   "name": "@solana/spl-name-service",
-  "version": "0.1.2",
+  "version": "0.1.12",
   "description": "SPL Name Service JavaScript API",
   "license": "MIT",
   "author": "Solana Maintainers <maintainers@solana.foundation>",
@@ -18,7 +18,7 @@
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
-    "dev": "tsc && node --trace-warnings dist/transfer.js",
+    "dev": "tsc && node --trace-warnings dist/test.js",
     "build": "tsc",
     "prepublish": "tsc",
     "lint": "yarn pretty && eslint .",
@@ -59,8 +59,6 @@
     "bs58": "4.0.1",
     "buffer-layout": "^1.2.0",
     "core-util-is": "^1.0.2",
-    "crypto": "^1.0.1",
-    "crypto-ts": "^1.0.2",
     "fs": "^0.0.1-security",
     "tweetnacl": "^1.0.3",
     "webpack-dev-server": "^3.11.2"
