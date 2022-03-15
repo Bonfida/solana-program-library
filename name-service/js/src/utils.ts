@@ -128,7 +128,7 @@ export async function getNameAccountKey(
 export async function getNameOwner(
   connection: Connection,
   nameAccountKey: PublicKey
-): Promise<NameRegistryState> {
+) {
   const nameAccount = await connection.getAccountInfo(nameAccountKey);
   if (!nameAccount) {
     throw new Error("Unable to find the given account.");
@@ -164,26 +164,29 @@ export async function performReverseLookup(
   connection: Connection,
   nameAccount: PublicKey
 ): Promise<string> {
-  let hashedReverseLookup = await getHashedName(nameAccount.toBase58());
-  let reverseLookupAccount = await getNameAccountKey(
+  const hashedReverseLookup = await getHashedName(nameAccount.toBase58());
+  const reverseLookupAccount = await getNameAccountKey(
     hashedReverseLookup,
     REVERSE_LOOKUP_CLASS
   );
 
-  let name = await NameRegistryState.retrieve(connection, reverseLookupAccount);
-  if (!name.data) {
+  const { registry } = await NameRegistryState.retrieve(
+    connection,
+    reverseLookupAccount
+  );
+  if (!registry.data) {
     throw "Could not retrieve name data";
   }
-  let nameLength = new BN(name.data.slice(0, 4), "le").toNumber();
-  return name.data.slice(4, 4 + nameLength).toString();
+  const nameLength = new BN(registry.data.slice(0, 4), "le").toNumber();
+  return registry.data.slice(4, 4 + nameLength).toString();
 }
 
 export async function getDNSRecordAddress(
   nameAccount: PublicKey,
   type: string
 ) {
-  let hashedName = await getHashedName("\0".concat(type));
-  let recordAccount = await getNameAccountKey(
+  const hashedName = await getHashedName("\0".concat(type));
+  const recordAccount = await getNameAccountKey(
     hashedName,
     undefined,
     nameAccount

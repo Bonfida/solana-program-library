@@ -15,7 +15,7 @@ export const getTokenInfoFromMint = async (
     undefined,
     TOKEN_TLD
   );
-  const registry = await NameRegistryState.retrieve(connection, nameKey);
+  const { registry } = await NameRegistryState.retrieve(connection, nameKey);
   if (!registry.data) {
     throw new Error("Invalid account data");
   }
@@ -31,7 +31,7 @@ export const getTokenInfoFromName = async (
     undefined,
     TOKEN_TLD
   );
-  const reverseRegistry = await NameRegistryState.retrieve(
+  const { registry: reverseRegistry } = await NameRegistryState.retrieve(
     connection,
     reverseNameKey
   );

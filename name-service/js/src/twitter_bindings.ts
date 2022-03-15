@@ -238,7 +238,7 @@ export async function getTwitterRegistry(
     undefined,
     TWITTER_ROOT_PARENT_REGISTRY_KEY
   );
-  const registry = NameRegistryState.retrieve(
+  const { registry } = await NameRegistryState.retrieve(
     connection,
     twitterHandleRegistryKey
   );

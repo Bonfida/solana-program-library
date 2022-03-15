@@ -1,5 +1,6 @@
 import { Connection, PublicKey } from "@solana/web3.js";
 import { deserializeUnchecked, Schema, serialize } from "borsh";
+import { retrieveNftOwner } from "./nft";
 
 export class NameRegistryState {
   static HEADER_LEN = 96;
@@ -34,11 +35,8 @@ export class NameRegistryState {
   public static async retrieve(
     connection: Connection,
     nameAccountKey: PublicKey
-  ): Promise<NameRegistryState> {
-    let nameAccount = await connection.getAccountInfo(
-      nameAccountKey,
-      "processed"
-    );
+  ) {
+    const nameAccount = await connection.getAccountInfo(nameAccountKey);
     if (!nameAccount) {
       throw new Error("Invalid name account provided");
     }
@@ -51,7 +49,9 @@ export class NameRegistryState {
 
     res.data = nameAccount.data?.slice(this.HEADER_LEN);
 
-    return res;
+    const nftOwner = await retrieveNftOwner(connection, nameAccountKey);
+
+    return { registry: res, nftOwner };
   }
 
   static async _retrieveBatch(

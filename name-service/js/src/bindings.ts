@@ -64,7 +64,10 @@ export async function createNameRegistry(
 
   let nameParentOwner: PublicKey | undefined;
   if (parentName) {
-    const parentAccount = await getNameOwner(connection, parentName);
+    const { registry: parentAccount } = await getNameOwner(
+      connection,
+      parentName
+    );
     nameParentOwner = parentAccount.owner;
   }
 
@@ -117,7 +120,7 @@ export async function updateNameRegistryData(
     signer = nameClass;
   } else {
     signer = (await NameRegistryState.retrieve(connection, nameAccountKey))
-      .owner;
+      .registry.owner;
   }
 
   const updateInstr = updateInstruction(
@@ -163,7 +166,7 @@ export async function transferNameOwnership(
   } else {
     curentNameOwner = (
       await NameRegistryState.retrieve(connection, nameAccountKey)
-    ).owner;
+    ).registry.owner;
   }
 
   const transferInstr = transferInstruction(
@@ -206,7 +209,7 @@ export async function deleteNameRegistry(
     nameOwner = nameClass;
   } else {
     nameOwner = (await NameRegistryState.retrieve(connection, nameAccountKey))
-      .owner;
+      .registry.owner;
   }
 
   const changeAuthoritiesInstr = deleteInstruction(
