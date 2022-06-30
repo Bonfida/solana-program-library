@@ -1,108 +1,20 @@
-import {
-  AccountInfo,
-  Connection,
-  Keypair,
-  PublicKey,
-  Transaction,
-  TransactionInstruction,
-  MemcmpFilter,
-} from "@solana/web3.js";
+import { Connection, PublicKey, MemcmpFilter } from "@solana/web3.js";
 import BN from "bn.js";
 import { sha256 } from "@ethersproject/sha2";
-import { HASH_PREFIX, NAME_PROGRAM_ID } from "./bindings";
+import { HASH_PREFIX, NAME_PROGRAM_ID, ROOT_DOMAIN_ACCOUNT } from "./constants";
 import { NameRegistryState } from "./state";
+import { REVERSE_LOOKUP_CLASS } from "./constants";
 
-export const REVERSE_LOOKUP_CLASS = new PublicKey(
-  "33m47vH6Eav6jr5Ry86XjhRft2jRBLDnDgPSHoquXi2Z"
-);
-
-export class Numberu32 extends BN {
-  /**
-   * Convert to Buffer representation
-   */
-  toBuffer(): Buffer {
-    const a = super.toArray().reverse();
-    const b = Buffer.from(a);
-    if (b.length === 4) {
-      return b;
-    }
-    if (b.length > 4) {
-      throw new Error("Numberu32 too large");
-    }
-
-    const zeroPad = Buffer.alloc(4);
-    b.copy(zeroPad);
-    return zeroPad;
-  }
-
-  /**
-   * Construct a Numberu64 from Buffer representation
-   */
-  static fromBuffer(buffer): BN {
-    if (buffer.length !== 4) {
-      throw new Error(`Invalid buffer length: ${buffer.length}`);
-    }
-
-    return new BN(
-      [...buffer]
-        .reverse()
-        .map((i) => `00${i.toString(16)}`.slice(-2))
-        .join(""),
-      16
-    );
-  }
-}
-
-export class Numberu64 extends BN {
-  /**
-   * Convert to Buffer representation
-   */
-  toBuffer(): Buffer {
-    const a = super.toArray().reverse();
-    const b = Buffer.from(a);
-    if (b.length === 8) {
-      return b;
-    }
-
-    if (b.length > 8) {
-      throw new Error("Numberu64 too large");
-    }
-
-    const zeroPad = Buffer.alloc(8);
-    b.copy(zeroPad);
-    return zeroPad;
-  }
-
-  /**
-   * Construct a Numberu64 from Buffer representation
-   */
-  static fromBuffer(buffer): BN {
-    if (buffer.length !== 8) {
-      throw new Error(`Invalid buffer length: ${buffer.length}`);
-    }
-    return new BN(
-      [...buffer]
-        .reverse()
-        .map((i) => `00${i.toString(16)}`.slice(-2))
-        .join(""),
-      16
-    );
-  }
-}
-
-export const signAndSendTransactionInstructions = async (
-  // sign and send transaction
+export async function getNameOwner(
   connection: Connection,
-  signers: Array<Keypair>,
-  feePayer: Keypair,
-  txInstructions: Array<TransactionInstruction>
-): Promise<string> => {
-  const tx = new Transaction();
-  tx.feePayer = feePayer.publicKey;
-  signers.push(feePayer);
-  tx.add(...txInstructions);
-  return await connection.sendTransaction(tx, signers);
-};
+  nameAccountKey: PublicKey
+) {
+  const nameAccount = await connection.getAccountInfo(nameAccountKey);
+  if (!nameAccount) {
+    throw new Error("Unable to find the given account.");
+  }
+  return NameRegistryState.retrieve(connection, nameAccountKey);
+}
 
 export async function getHashedName(name: string): Promise<Buffer> {
   const input = HASH_PREFIX + name;
@@ -131,41 +43,6 @@ export async function getNameAccountKey(
     NAME_PROGRAM_ID
   );
   return nameAccountKey;
-}
-
-export async function getNameOwner(
-  connection: Connection,
-  nameAccountKey: PublicKey
-) {
-  const nameAccount = await connection.getAccountInfo(nameAccountKey);
-  if (!nameAccount) {
-    throw new Error("Unable to find the given account.");
-  }
-  return NameRegistryState.retrieve(connection, nameAccountKey);
-}
-
-//Taken from Serum
-export async function getFilteredProgramAccounts(
-  connection: Connection,
-  programId: PublicKey,
-  filters
-): Promise<{ publicKey: PublicKey; accountInfo: AccountInfo<Buffer> }[]> {
-  const resp = await connection.getProgramAccounts(programId, {
-    commitment: connection.commitment,
-    filters,
-    encoding: "base64",
-  });
-  return resp.map(
-    ({ pubkey, account: { data, executable, owner, lamports } }) => ({
-      publicKey: pubkey,
-      accountInfo: {
-        data: data,
-        executable,
-        owner: owner,
-        lamports,
-      },
-    })
-  );
 }
 
 export async function performReverseLookup(
@@ -234,6 +111,12 @@ export async function performReverseLookupBatch(
   });
 }
 
+/**
+ *
+ * @param connection The Solana RPC connection object
+ * @param parentKey The parent you want to find sub-domains for
+ * @returns
+ */
 export const findSubdomains = async (
   connection: Connection,
   parentKey: PublicKey
@@ -261,3 +144,64 @@ export const findSubdomains = async (
     e.account.data.slice(97).toString("utf-8")?.split("\0").join("")
   );
 };
+
+const _derive = async (
+  name: string,
+  parent: PublicKey = ROOT_DOMAIN_ACCOUNT
+) => {
+  let hashed = await getHashedName(name);
+  let pubkey = await getNameAccountKey(hashed, undefined, parent);
+  return { pubkey, hashed };
+};
+
+/**
+ * This function can be used to compute the public key of a domain or subdomain
+ * @param domain The domain to compute the public key for (e.g `bonfida.sol`, `dex.bonfida.sol`)
+ * @returns
+ */
+export const getDomainKey = async (domain: string) => {
+  if (domain.endsWith(".sol")) {
+    domain = domain.slice(0, -4);
+  }
+  const splitted = domain.split(".");
+  if (splitted.length === 2) {
+    const sub = "\0".concat(splitted[0]);
+    const { pubkey: parentKey } = await _derive(splitted[1]);
+    const result = await _derive(sub, parentKey);
+    return { ...result, isSub: true, parent: parentKey };
+  } else if (splitted.length > 2) {
+    throw new Error("Invalid derivation input");
+  }
+  const result = await _derive(domain, ROOT_DOMAIN_ACCOUNT);
+  return { ...result, isSub: false, parent: undefined };
+};
+
+/**
+ * This function can be used to retrieve all domain names owned by `wallet`
+ * @param connection The Solana RPC connection object
+ * @param wallet The wallet you want to search domain names for
+ * @returns
+ */
+export async function getAllDomains(
+  connection: Connection,
+  wallet: PublicKey
+): Promise<PublicKey[]> {
+  const filters = [
+    {
+      memcmp: {
+        offset: 32,
+        bytes: wallet.toBase58(),
+      },
+    },
+    {
+      memcmp: {
+        offset: 0,
+        bytes: ROOT_DOMAIN_ACCOUNT.toBase58(),
+      },
+    },
+  ];
+  const accounts = await connection.getProgramAccounts(NAME_PROGRAM_ID, {
+    filters,
+  });
+  return accounts.map((a) => a.pubkey);
+}

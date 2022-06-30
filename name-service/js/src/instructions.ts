@@ -4,9 +4,9 @@ import {
   SystemProgram,
 } from "@solana/web3.js";
 import { TOKEN_PROGRAM_ID } from "@solana/spl-token";
-import { Numberu32, Numberu64 } from "./utils";
+import { Numberu32, Numberu64 } from "./int";
 import { Schema, serialize } from "borsh";
-import { PYTH_FIDDA_PRICE_ACC } from "./bindings";
+import { PYTH_FIDDA_PRICE_ACC } from "./constants";
 
 export function createInstruction(
   nameProgramId: PublicKey,

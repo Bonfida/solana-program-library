@@ -13,35 +13,16 @@ import {
   createV2Instruction,
 } from "./instructions";
 import { NameRegistryState } from "./state";
-import { Numberu64 } from "./utils";
+import { Numberu64, Numberu32 } from "./int";
+import { getHashedName, getNameAccountKey, getNameOwner } from "./utils";
 import {
-  getHashedName,
-  getNameAccountKey,
-  getNameOwner,
-  Numberu32,
-} from "./utils";
+  NAME_PROGRAM_ID,
+  ROOT_DOMAIN_ACCOUNT,
+  REGISTER_PROGRAM_ID,
+  BONFIDA_FIDA_BNB,
+} from "./constants";
 
-////////////////////////////////////////////////////////////
 
-export const NAME_PROGRAM_ID = new PublicKey(
-  "namesLPneVptA9Z5rqUDD9tMTWEJwofgaYwp8cawRkX"
-);
-export const HASH_PREFIX = "SPL Name Service";
-
-export const REGISTER_PROGRAM_ID = new PublicKey(
-  "jCebN34bUfdeUYJT13J1yG16XWQpt5PDx6Mse9GUqhR"
-);
-export const PYTH_FIDDA_PRICE_ACC = new PublicKey(
-  "ETp9eKXVv1dWwHSpsXRUuXHmw24PwRkttCGVgpZEY9zF"
-);
-export const BONFIDA_FIDA_BNB = new PublicKey(
-  "AUoZ3YAhV3b2rZeEH93UMZHXUZcTramBvb4d9YEVySkc"
-);
-export const ROOT_DOMAIN_ACCOUNT = new PublicKey(
-  "58PwtjSDuFHuUkYjH9BYnnQKHfwo9reZhC2zMJv9JPkx"
-);
-
-////////////////////////////////////////////////////////////
 /**
  * Creates a name account with the given rent budget, allocated space, owner and class.
  *

@@ -4,8 +4,12 @@ import {
   SystemProgram,
   TransactionInstruction,
 } from "@solana/web3.js";
-
-import { deleteNameRegistry, NAME_PROGRAM_ID } from "./bindings";
+import {
+  NAME_PROGRAM_ID,
+  TWITTER_VERIFICATION_AUTHORITY,
+  TWITTER_ROOT_PARENT_REGISTRY_KEY,
+} from "./constants";
+import { deleteNameRegistry } from "./bindings";
 import {
   createInstruction,
   deleteInstruction,
@@ -13,26 +17,9 @@ import {
   updateInstruction,
 } from "./instructions";
 import { NameRegistryState } from "./state";
-import {
-  getFilteredProgramAccounts,
-  getHashedName,
-  getNameAccountKey,
-  Numberu32,
-  Numberu64,
-} from "./utils";
-import { deserialize, deserializeUnchecked, Schema, serialize } from "borsh";
-
-////////////////////////////////////////////////////
-// Global Variables
-
-export const TWITTER_VERIFICATION_AUTHORITY = new PublicKey(
-  "FvPH7PrVrLGKPfqaf3xJodFTjZriqrAXXLTVWEorTFBi"
-);
-// The address of the name registry that will be a parent to all twitter handle registries,
-// it should be owned by the TWITTER_VERIFICATION_AUTHORITY and it's name is irrelevant
-export const TWITTER_ROOT_PARENT_REGISTRY_KEY = new PublicKey(
-  "4YcexoW3r78zz16J2aqmukBLRwGq6rAvWzJpkYAXqebv"
-);
+import { getHashedName, getNameAccountKey } from "./utils";
+import { Numberu32, Numberu64 } from "./int";
+import { deserializeUnchecked, Schema, serialize } from "borsh";
 
 ////////////////////////////////////////////////////
 // Bindings
@@ -295,16 +282,14 @@ export async function getTwitterHandleandRegistryKeyViaFilters(
       },
     },
   ];
-
-  const filteredAccounts = await getFilteredProgramAccounts(
-    connection,
+  const filteredAccounts = await connection.getProgramAccounts(
     NAME_PROGRAM_ID,
-    filters
+    { filters }
   );
 
   for (const f of filteredAccounts) {
-    if (f.accountInfo.data.length > NameRegistryState.HEADER_LEN + 32) {
-      let data = f.accountInfo.data.slice(NameRegistryState.HEADER_LEN);
+    if (f.account.data.length > NameRegistryState.HEADER_LEN + 32) {
+      let data = f.account.data.slice(NameRegistryState.HEADER_LEN);
       let state: ReverseTwitterRegistryState = deserializeUnchecked(
         ReverseTwitterRegistryState.schema,
         ReverseTwitterRegistryState,
@@ -326,13 +311,13 @@ export async function getTwitterRegistryData(
     {
       memcmp: {
         offset: 0,
-        bytes: TWITTER_ROOT_PARENT_REGISTRY_KEY.toBytes(),
+        bytes: TWITTER_ROOT_PARENT_REGISTRY_KEY.toBase58(),
       },
     },
     {
       memcmp: {
         offset: 32,
-        bytes: verifiedPubkey.toBytes(),
+        bytes: verifiedPubkey.toBase58(),
       },
     },
     {
@@ -343,19 +328,16 @@ export async function getTwitterRegistryData(
     },
   ];
 
-  const filteredAccounts = await getFilteredProgramAccounts(
-    connection,
+  const filteredAccounts = await connection.getProgramAccounts(
     NAME_PROGRAM_ID,
-    filters
+    { filters }
   );
 
   if (filteredAccounts.length > 1) {
     throw new Error("Found more than one registry.");
   }
 
-  return filteredAccounts[0].accountInfo.data.slice(
-    NameRegistryState.HEADER_LEN
-  );
+  return filteredAccounts[0].account.data.slice(NameRegistryState.HEADER_LEN);
 }
 
 //////////////////////////////////////////////
