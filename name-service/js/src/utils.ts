@@ -238,3 +238,20 @@ export const getAllRegisteredDomains = async (connection: Connection) => {
   });
   return accounts;
 };
+
+/**
+ *
+ * @param domain The domain to compute the reverse for
+ * @param isSub Whether the domain is a subdomain or not
+ * @returns
+ */
+export const getReverseKey = async (domain: string, isSub?: boolean) => {
+  const { pubkey, parent } = await getDomainKey(domain);
+  const hashedReverseLookup = await getHashedName(pubkey.toBase58());
+  const reverseLookupAccount = await getNameAccountKey(
+    hashedReverseLookup,
+    REVERSE_LOOKUP_CLASS,
+    isSub ? parent : undefined
+  );
+  return reverseLookupAccount;
+};
