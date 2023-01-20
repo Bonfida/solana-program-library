@@ -226,7 +226,7 @@ export async function deleteNameRegistry(
  * @param name The domain name to register e.g bonfida if you want to register bonfida.sol
  * @param space The domain name account size (max 10kB)
  * @param buyer The public key of the buyer
- * @param buyerTokenAccount The buyer FIDA token account
+ * @param buyerTokenAccount The buyer token account (USDC)
  * @returns
  */
 export const registerDomainName = async (
