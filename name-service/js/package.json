@@ -1,7 +1,11 @@
 {
   "name": "@bonfida/spl-name-service",
-  "version": "0.1.63",
+  "version": "0.1.64",
   "license": "MIT",
+  "files": [
+    "dist",
+    "src"
+  ],
   "repository": {
     "type": "git",
     "url": "https://github.com/Bonfida/solana-program-library"
