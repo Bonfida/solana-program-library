@@ -66,19 +66,6 @@ export async function performReverseLookup(
   return registry.data.slice(4, 4 + nameLength).toString();
 }
 
-export async function getDNSRecordAddress(
-  nameAccount: PublicKey,
-  type: string
-) {
-  const hashedName = await getHashedName("\0".concat(type));
-  const recordAccount = await getNameAccountKey(
-    hashedName,
-    undefined,
-    nameAccount
-  );
-  return recordAccount;
-}
-
 export async function performReverseLookupBatch(
   connection: Connection,
   nameAccounts: PublicKey[]

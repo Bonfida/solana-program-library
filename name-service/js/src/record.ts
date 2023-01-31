@@ -5,6 +5,17 @@ import { NameRegistryState } from "./state";
 import { SOL_RECORD_SIG_LEN } from "./constants";
 
 /**
+ * This function can be used to derive a record key
+ * @param domain The .sol domain name
+ * @param record The record to derive the key for
+ * @returns
+ */
+export const getRecordKey = async (domain: string, record: Record) => {
+  const { pubkey } = await getDomainKey(record + "." + domain, true);
+  return pubkey;
+};
+
+/**
  * This function can be used to retrieve a specified record for the given domain name
  * @param connection The Solana RPC connection object
  * @param domain The .sol domain name
@@ -16,7 +27,7 @@ export const getRecord = async (
   domain: string,
   record: Record
 ) => {
-  const { pubkey } = await getDomainKey(record + "." + domain, true);
+  const pubkey = await getRecordKey(domain, record);
   let { registry } = await NameRegistryState.retrieve(connection, pubkey);
 
   // Remove trailling 0s
